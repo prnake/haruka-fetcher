@@ -1,0 +1,8 @@
+uvicorn
+fastapi
+requests
+requests_go
+fake-useragent
+pyyaml
+chardet
+haruka_parser==0.3.5
