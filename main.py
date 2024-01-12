@@ -101,7 +101,10 @@ async def fetch_pdf_url(url: str, timeout, source="", params=None, proxy=None):
             html = pdf_to_html(response.content, timeout)
             return {"html": html, "proxy": proxy is not None, "source": source, "status": 200}
     except Exception as e:
-        logger.error(f"Error fetching {url}: {e}")
+        if proxy:
+            logger.error(f"Error fetching {url} with proxy: {e}")
+        else:
+            logger.error(f"Error fetching {url}: {e}")
         return None
 
 async def fetch_url(url: str, timeout, source="", params=None, proxy=None):
