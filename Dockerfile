@@ -2,7 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-CMD apt-get install libpangocairo-1.0-0
+RUN apt-get update -qq \
+    && apt-get install -yqq --no-install-recommends \
+        libpangocairo-1.0-0
 
 COPY requirements.txt .
 
