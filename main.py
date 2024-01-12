@@ -10,7 +10,10 @@ from utils import get_tls, get_headers, get_ua
 from haruka_parser.extract import extract_text
 from haruka_parser.extract import DEFAULT_CONFIG as configuration
 
-# import fitz
+import fitz
+import logging
+
+logger = logging.getLogger("uvicorn.error")
 
 from uuid import uuid4
 from apryse_sdk import *
@@ -28,6 +31,17 @@ app = FastAPI()
 
 security = HTTPBearer()
 
+def pdf_to_html_fitz(pdf_path):
+    doc = fitz.open(pdf_path)
+    html_content = ""
+    for page_num in range(len(doc)):
+        page = doc.load_page(page_num)
+        text_lines = page.get_text("text").split('\n')
+        for line in text_lines:
+            html_content += f"<p>{line}</p>"
+    doc.close()
+    return html_content
+
 def pdf_to_html(pdf_content, timeout):
     pdf_tmp_id = str(uuid4())
     tmp_path = f'tmp_pdf_data/{pdf_tmp_id}'
@@ -36,14 +50,38 @@ def pdf_to_html(pdf_content, timeout):
     html_tmp_path = f'{tmp_path}/tmp.html'
     open(pdf_tmp_path, "wb").write(pdf_content)
 
+    html = ""
+
     htmlOutputOptions = HTMLOutputOptions()
 
-    htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_full)
     htmlOutputOptions.SetConnectHyphens(True)
     htmlOutputOptions.SetEmbedImages(False)
     htmlOutputOptions.SetFileConversionTimeoutSeconds(timeout)
-    Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
-    html = open(html_tmp_path, encoding="utf-8").read()
+
+    try:
+        htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_full)
+        Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
+        html = open(html_tmp_path, encoding="utf-8").read()
+    except Exception as e:
+        logger.error(f"error: e_reflow_full, try e_reflow_paragraphs next {str(e)}")
+        pass
+
+    if not html:
+        try:
+            htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_paragraphs)
+            Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
+            html = open(html_tmp_path, encoding="utf-8").read()
+        except Exception as e:
+            logger.error(f"error: e_reflow_paragraphs, try fitz next {str(e)}")
+            pass
+    
+    if not html:
+        try:
+            html = pdf_to_html_fitz(pdf_tmp_path)
+        except Exception as e:
+            logger.error(f"error: fitz {str(e)}")
+            pass
+
     try:
         shutil.rmtree(tmp_path)
     except:
@@ -63,7 +101,7 @@ async def fetch_pdf_url(url: str, timeout, source="", params=None, proxy=None):
             html = pdf_to_html(response.content, timeout)
             return {"html": html, "proxy": proxy is not None, "source": source, "status": 200}
     except Exception as e:
-        print(f"Error fetching {url}: {e}")
+        logger.error(f"Error fetching {url}: {e}")
         return None
 
 async def fetch_url(url: str, timeout, source="", params=None, proxy=None):
@@ -85,7 +123,7 @@ async def fetch_url(url: str, timeout, source="", params=None, proxy=None):
             else:
                 return {"html": response.text, "proxy": proxy is not None, "source": source, "status": 200}
     except Exception as e:
-        print(f"Error fetching {url}: {e}")
+        logger.error(f"Error fetching {url}: {e}")
         return None
 
 async def get_content_type(url: str):

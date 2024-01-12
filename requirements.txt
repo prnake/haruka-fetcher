@@ -4,5 +4,6 @@ requests
 requests_go
 fake-useragent
 pyyaml
+pymupdf
 chardet
 haruka_parser==0.3.5
