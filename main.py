@@ -12,6 +12,7 @@ from haruka_parser.extract import DEFAULT_CONFIG as configuration
 
 import fitz
 import logging
+import timeout_decorator
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -51,6 +52,13 @@ def pdf_to_html(pdf_content, timeout):
     open(pdf_tmp_path, "wb").write(pdf_content)
 
     html = ""
+    fallback_html = ""
+
+    try:
+        fallback_html = pdf_to_html_fitz(pdf_tmp_path)
+    except Exception as e:
+        logger.error(f"error: fitz {str(e)}")
+        pass
 
     htmlOutputOptions = HTMLOutputOptions()
 
@@ -58,29 +66,34 @@ def pdf_to_html(pdf_content, timeout):
     htmlOutputOptions.SetEmbedImages(False)
     htmlOutputOptions.SetFileConversionTimeoutSeconds(timeout)
 
-    try:
-        htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_full)
-        Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
-        html = open(html_tmp_path, encoding="utf-8").read()
-    except Exception as e:
-        logger.error(f"error: e_reflow_full, try e_reflow_paragraphs next {str(e)}")
-        pass
-
-    if not html:
+    @timeout_decorator.timeout(timeout)
+    def convert_to_html():
+        html = ""
         try:
-            htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_paragraphs)
+            htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_full)
             Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
             html = open(html_tmp_path, encoding="utf-8").read()
         except Exception as e:
-            logger.error(f"error: e_reflow_paragraphs, try fitz next {str(e)}")
+            logger.error(f"error: e_reflow_full {str(e)}")
             pass
+
+        if not html:
+            try:
+                htmlOutputOptions.SetContentReflowSetting(HTMLOutputOptions.e_reflow_paragraphs)
+                Convert.ToHtml(pdf_tmp_path, html_tmp_path, htmlOutputOptions)
+                html = open(html_tmp_path, encoding="utf-8").read()
+            except Exception as e:
+                logger.error(f"error: e_reflow_paragraphs {str(e)}")
+                pass
+        return html
+    
+    try:
+        html = convert_to_html()
+    except Exception as e:
+        logger.error(f"error: apryse {str(e)}")
     
     if not html:
-        try:
-            html = pdf_to_html_fitz(pdf_tmp_path)
-        except Exception as e:
-            logger.error(f"error: fitz {str(e)}")
-            pass
+        html = fallback_html
 
     try:
         shutil.rmtree(tmp_path)

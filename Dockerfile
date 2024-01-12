@@ -6,6 +6,7 @@ CMD apt-get install libpangocairo-1.0-0
 
 COPY requirements.txt .
 
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
