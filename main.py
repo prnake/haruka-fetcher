@@ -174,6 +174,8 @@ async def browser(credentials: Annotated[str, Depends(security)], url: str, time
 
     if "pdf" in content_type:
         tasks.append(fetch_pdf_url(url, timeout, source="pdf"))
+        if PROXY:
+            tasks.append(fetch_pdf_url(url, timeout, source="pdf", proxy=PROXY))
 
     else:
         tasks.append(fetch_url(url, timeout, source="get"))
