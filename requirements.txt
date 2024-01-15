@@ -8,3 +8,4 @@ pymupdf
 chardet
 haruka_parser==0.3.5
 timeout_decorator
+charset_mnbvc
