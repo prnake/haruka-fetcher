@@ -154,18 +154,26 @@ def fetch_url(url: str, timeout, source="", params=None, proxy=None):
                 elif b'\x00' in content:
                     return None
                 else:
-                    encoding = charset_mnbvc.api.from_data(data=content, mode=2)
+                    encoding = "UNKNOWN"
+                    try:
+                        encoding = charset_mnbvc.api.from_data(data=content, mode=2)
+                    except:
+                        pass
+                    if encoding == "UNKNOWN":
+                        encoding = "utf-8"
                     html_result = ""
                     try:
                         html_result = content.decode(encoding)
                     except Exception as e:
                         logger.error(f"Error parse url {url} {e}")
                         pass
-                    try:
-                        html_result = content.decode('utf-8', errors='ignore')
-                    except Exception as e:
-                        logger.error(f"Error parse url {url} {e}")
-                        pass
+                    if not html_result:
+                        try:
+                            encoding = "utf-8"
+                            html_result = content.decode(encoding, errors='ignore')
+                        except Exception as e:
+                            logger.error(f"Error parse url {url} {e}")
+                            pass
                     if html_result:
                         return {"html": html_result, "proxy": proxy is not None, "encoding": encoding, "source": source, "status": 200}
                     else:
