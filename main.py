@@ -270,7 +270,7 @@ async def browser(credentials: Annotated[str, Depends(security)], url: str, time
         tasks.append(wait_for_thread(fetch_url, (url, timeout, "proxy", None, proxy), timeout))
 
     if BROSWER_API:
-        browser_params = {"url": url, "timeout": int(timeout*1000), "user-agent": get_ua()}
+        browser_params = {"url": url, "timeout": int(timeout*1000 - 500), "user-agent": get_ua()}
         tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params), timeout))
         browser_params.update({"proxy-server": proxy_server, "proxy-username": proxy_username, "proxy-password": proxy_password})
         # tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params, "playwright_proxy"), timeout))
