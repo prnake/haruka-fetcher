@@ -269,12 +269,11 @@ async def browser(credentials: Annotated[str, Depends(security)], url: str, time
     if proxy:
         tasks.append(wait_for_thread(fetch_url, (url, timeout, "proxy", None, proxy), timeout))
 
-    if BROSWER_API and proxy_server:
+    if BROSWER_API:
         browser_params = {"url": url, "timeout": int(timeout*1000), "user-agent": get_ua()}
+        tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params), timeout))
         browser_params.update({"proxy-server": proxy_server, "proxy-username": proxy_username, "proxy-password": proxy_password})
-        tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params, "playwright_proxy"), timeout))
-        
-        # tasks.append(fetch_url(f"{BROSWER_API}/api/article", timeout, source="playwright", params=browser_params))
+        # tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params, "playwright_proxy"), timeout))
     def cancel_all_task():
         pass
         # for task in tasks:
