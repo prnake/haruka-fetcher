@@ -220,8 +220,11 @@ async def wait_for_thread(func, args=(), timeout=10):
         return None
 
 @app.get("/browser")
-async def browser(credentials: Annotated[str, Depends(security)], url: str, timeout: int = 9):
+async def browser(credentials: Annotated[str, Depends(security)], url: str, timeout: int = 10):
 
+    # gracefully reduce timeout
+    timeout = timeout - 1
+    
     start_time = time.time()
 
     def remaining_timeout(real=False):
