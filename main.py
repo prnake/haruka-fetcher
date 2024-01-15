@@ -15,6 +15,9 @@ import charset_mnbvc.api
 import socket
 socket.setdefaulttimeout(20)
 
+import warnings
+warnings.filterwarnings("ignore", message="Unverified HTTPS request is being made")
+
 import fitz
 import logging
 import time
@@ -134,9 +137,9 @@ def fetch_url(url: str, timeout, source="", params=None, proxy=None):
             headers = get_headers()
             tls = get_tls()
             if proxy and proxy != "playwright_proxy":
-                response = requests_go.get(url, params=params, headers=headers, proxies={"http": proxy, "https": proxy}, tls_config=tls, timeout=timeout)
+                response = requests_go.get(url, params=params, headers=headers, proxies={"http": proxy, "https": proxy}, tls_config=tls, verify=False, timeout=timeout)
             else:
-                response = requests.get(url, params=params, headers=headers, timeout=timeout)
+                response = requests.get(url, params=params, headers=headers, verify=False, timeout=timeout)
 
             if response.status_code == 200:
                 if source == "playwright":
@@ -280,7 +283,7 @@ async def browser(credentials: Annotated[str, Depends(security)], url: str, time
     if BROSWER_API:
         browser_params = {"url": url, "timeout": int(timeout*1000 - 500), "user-agent": get_ua()}
         tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params), timeout))
-        browser_params.update({"proxy-server": proxy_server, "proxy-username": proxy_username, "proxy-password": proxy_password})
+        # browser_params.update({"proxy-server": proxy_server, "proxy-username": proxy_username, "proxy-password": proxy_password})
         # tasks.append(wait_for_thread(fetch_url, (f"{BROSWER_API}/api/article", timeout, "playwright", browser_params, "playwright_proxy"), timeout))
     def cancel_all_task():
         pass
