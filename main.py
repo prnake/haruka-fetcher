@@ -168,7 +168,7 @@ def fetch_url(url: str, timeout, source="", params=None, proxy=None):
                     try:
                         html_result = content.decode(encoding)
                     except Exception as e:
-                        logger.error(f"Error parse url {url} {e}")
+                        logger.warning(f"Error parse url {url} {e}")
                         pass
                     if not html_result:
                         try:
