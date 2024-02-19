@@ -5,6 +5,7 @@ ua = UserAgent(min_percentage=4.2)
 tls = requests_go.tls_config.TLS_CHROME_110_LATEST
 
 def get_tls():
+    tls.force_http1 = True
     return tls
 
 def get_headers():
